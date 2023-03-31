@@ -15,12 +15,12 @@ use std::mem;
 use eframe::CreationContext;
 use eframe::egui;
 
-pub mod plot;
+
 
 pub mod trick_var_defs;
 
 use crate::trick_var_defs::*;
-use crate::plot::*;
+
 
 fn main() {
 
