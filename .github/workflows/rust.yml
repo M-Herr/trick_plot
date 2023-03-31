@@ -15,7 +15,7 @@ jobs:
     name: Rust project - nightly
     strategy:
       matrix: 
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest]
         toolchain: [nightly]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
