@@ -97,61 +97,52 @@ pub fn c_string(bytes: &[u8]) -> Option<&str> {
 pub fn i8_from_bytes(bytes: &[u8]) -> Option<i8> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_i8().unwrap();
-    Some(val)
+   Some(rdr.read_i8().unwrap())
+
 }
 
 //unsigned int
 pub fn u32_from_bytes(bytes: &[u8]) -> Option<u32> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_u32::<LittleEndian>().ok();
-
-    //print!("{:?}", val);
-    
-    val
+    rdr.read_u32::<LittleEndian>().ok()
 }
 
 //long int
 pub fn u64_from_bytes(bytes: &[u8]) -> Option<u64> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_u64::<LittleEndian>().ok();
+    rdr.read_u64::<LittleEndian>().ok()
 
-    //print!("{:?}", val);
-    val
 }
 
 //double
 pub fn f64_from_bytes(bytes: &[u8]) -> Option<f64> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_f64::<LittleEndian>().ok();
-    val
+    rdr.read_f64::<LittleEndian>().ok()
+    
 }
 
 //float
 pub fn f32_from_bytes(bytes: &[u8]) -> Option<f32> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_f32::<LittleEndian>().ok();
-
-    val
+    rdr.read_f32::<LittleEndian>().ok()
 }
 
 //char (sometimes)
 pub fn i32_from_bytes(bytes: &[u8]) -> Option<i32> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_i32::<LittleEndian>().ok();
-    val
+   rdr.read_i32::<LittleEndian>().ok()
+   
 }
 
 pub fn i16_from_bytes(bytes: &[u8]) -> Option<i16> {
     let mut rdr = std::io::Cursor::new(bytes);
 
-    let val = rdr.read_i16::<LittleEndian>().ok();
-    val
+    rdr.read_i16::<LittleEndian>().ok()
 }
 
 #[derive(Debug, Clone)]
@@ -217,11 +208,11 @@ impl TrickData {
         let mut header_file_name = input.name.to_owned();
         let header_file_type = ".header";
         
-        header_file_name = header_file_name + header_file_type;
+        header_file_name += header_file_type;
 
-        let mut log_file_name = input.name.to_owned();
+        let mut log_file_name = input.name;
         let log_binary_file_type = ".trk";
-        log_file_name = log_file_name + log_binary_file_type;
+        log_file_name += log_binary_file_type;
 
         let name:  String = header_file_name.to_owned();
         path.push_str(&log_file_name);
@@ -369,18 +360,39 @@ fn read_variable_descriptor(rdr: &mut std::io::Cursor<Vec<u8>>,  trick_type_defs
         let mut results: Vec<f64> = vec![0.0; 0];   
 
         let num_rows = descriptors.len();
+        
+        //Type conversions based on 
+        // https://locka99.gitbooks.io/a-guide-to-porting-c-to-rust/content/features_of_rust/types.html
 
-        for i in 0..num_rows {
+        let mut char_vec: Vec<i8> = vec![0; 0];
+        let mut uchar_vec: Vec<u8> = vec![0; 0];
+        let mut short_vec: Vec<i16> = vec![0; 0];
+        let mut uint_short_vec: Vec<u16> = vec![0; 0];
+        let mut int_vec: Vec<i32> = vec![0; 0];
+        let mut uint_vec: Vec<u32> = vec![0; 0];
+        let mut long_vec: Vec<i64> = vec![0; 0];
+        let mut long_long_vec: Vec<i64> = vec![0; 0];
+        let mut float_vec: Vec<f32> = vec![0.0; 0];
+        let mut double_vec: Vec<f32> = vec![0.0; 0];
+        let mut bool_vec: Vec<bool> = vec![false; 0];
+
+        for desc in descriptors.iter().take(num_rows) {
             
             let mut variable_type: String = "".into();
-            let trick_type = trick_type_defs.defs.get(&descriptors[i as usize].var_type_ident).unwrap();
+            let trick_type = trick_type_defs.defs.get(&desc.var_type_ident).unwrap();
             
             match trick_type.as_str() {
                 "char" => {
-                    todo!();
+                    buffer.resize(8, 0);
+                    rdr.read_exact(&mut buffer);
+                    let mut val = i8_from_bytes(&buffer).unwrap();
+                    char_vec.push(val);
                 },
                 "unsigned char" => {
-                    todo!();
+                    buffer.resize(8, 0);
+                    rdr.read_exact(&mut buffer);
+                    let mut val = i8_from_bytes(&buffer).unwrap();
+                    char_vec.push(val);
                 },
                 "short" => {
                     todo!();
@@ -404,6 +416,7 @@ fn read_variable_descriptor(rdr: &mut std::io::Cursor<Vec<u8>>,  trick_type_defs
                     buffer.resize(32, 0);
                     rdr.read_exact(&mut buffer);
                     let mut val = f32_from_bytes(&buffer).unwrap();
+                    float_vec.push(val);
                 },
                 "double" => {
                     rdr.read_exact(&mut buffer);
@@ -433,5 +446,38 @@ fn read_variable_descriptor(rdr: &mut std::io::Cursor<Vec<u8>>,  trick_type_defs
         }
 
         results
+}
 
-    }
+
+
+#[test]
+fn test_read_descriptors() 
+{
+    let var_descriptors = vec![VariableDescriptor::default(); 0];
+
+    let file_buf = std::fs::read("logs/log_cannon.trk").unwrap();
+
+    let mut rdr = std::io::Cursor::new(file_buf);
+
+    let descriptors = read_descriptors(&mut rdr);
+    
+    assert_eq!(descriptors.len(), 3);
+    
+    assert_eq!(descriptors[0].namelen, 17);
+    assert_eq!(descriptors[0].name, "sys.exec.out.time");
+    assert_eq!(descriptors[0].unitlen, 1);
+    assert_eq!(descriptors[0].unit, "s");
+    assert_eq!(descriptors[0].var_type_ident, 11);
+
+    assert_eq!(descriptors[1].namelen, 17);
+    assert_eq!(descriptors[1].name, "dyn.cannon.pos[0]");
+    assert_eq!(descriptors[1].unitlen, 1);
+    assert_eq!(descriptors[1].unit, "m");
+    assert_eq!(descriptors[1].var_type_ident, 11);
+
+    assert_eq!(descriptors[2].namelen, 17);
+    assert_eq!(descriptors[2].name, "dyn.cannon.pos[1]");
+    assert_eq!(descriptors[2].unitlen, 1);
+    assert_eq!(descriptors[2].unit, "m");
+    assert_eq!(descriptors[2].var_type_ident, 11);
+}

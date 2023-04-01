@@ -14,7 +14,11 @@ use std::io::prelude::*;
 use std::mem;
 use eframe::CreationContext;
 use eframe::egui;
-
+use egui::plot::{
+    Arrows, Bar, BarChart, BoxElem, BoxPlot, BoxSpread, CoordinatesFormatter, Corner, HLine,
+    Legend, Line, LineStyle, MarkerShape, Plot, PlotImage, PlotPoint, PlotPoints, Points, Polygon,
+    Text, VLine,
+};
 
 
 pub mod trick_var_defs;
@@ -113,6 +117,15 @@ impl MyEguiApp {
         print!("{:#?}", self.trick_data.descriptors);
     }
 
+    fn update_x_axis_values(&mut self) {
+
+    }
+
+    fn update_y_axis_values(&mut self) {
+        
+    }
+
+
     fn add_values(&mut self) {
         self.values.resize(self.trick_data.data[0].data.len(), PlotPoint {x: 0.0, y: 0.0});
 
@@ -123,6 +136,7 @@ impl MyEguiApp {
         let mut y_axis_vals: Vec<f64> = vec![0.0; 0];
 
         for i in 0..self.trick_data.descriptors.len() {
+
             if self.x_axis == self.trick_data.descriptors[i].name {
                 for j in 0..self.trick_data.data[i].data.len() {
                     x_axis_vals.push(self.trick_data.data[i].data[j]);
@@ -137,7 +151,7 @@ impl MyEguiApp {
         }
 
         
-        if(x_axis_vals.len() > 0 && y_axis_vals.len() > 0) {
+        if(!x_axis_vals.is_empty() &&  !y_axis_vals.is_empty()) {
             for i in 0..self.trick_data.data[0].data.len() {
                 self.values[i] = PlotPoint {x: x_axis_vals[i], y:y_axis_vals[i]}
             }
@@ -146,11 +160,9 @@ impl MyEguiApp {
     }
 }
 
-use egui::plot::{Plot, PlotPoints, PlotPoint};
-use egui::plot::{Line};
-
 impl eframe::App for MyEguiApp {
    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+
     egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
         // The top panel is often a good place for a menu bar:
         egui::menu::bar(ui, |ui| {
@@ -160,7 +172,7 @@ impl eframe::App for MyEguiApp {
                 }
             });
             ui.menu_button("Load Data", |ui| {
-                if ui.button("").clicked() {
+                if ui.button("Load Sample Data").clicked() {
                     self.load_trick_data();
                     self.add_values();
                 }
@@ -172,42 +184,48 @@ impl eframe::App for MyEguiApp {
         // The central panel the region left after adding TopPanel's and SidePanel's
         ui.end_row();
 
-       
-        if(self.trick_data.descriptors.len() > 0) {
+        if(!self.trick_data.descriptors.is_empty()) {
             
             egui::ComboBox::from_label("Select X Axis:")
-                .selected_text(format!("{:?}",self.trick_data.descriptors[self.x_selected].name.clone()))
+                .selected_text(format!("{:?}", self.trick_data.descriptors[self.x_selected].name.clone()))
                 .show_ui(ui, |ui| {
                     for i in 0..self.trick_data.descriptors.len() {
-                        let value = ui.selectable_value(&mut self.x_axis, self.trick_data.descriptors[self.x_selected].name.clone(), self.trick_data.descriptors[i].name.clone());
+                        let value = ui.selectable_value(&mut self.trick_data.descriptors[i].name.clone(), self.trick_data.descriptors[self.x_selected].name.clone(), self.trick_data.descriptors[i].name.clone());
                         if (value.clicked()) {
                             self.x_selected = i;
+                            self.x_axis = self.trick_data.descriptors[i].name.clone();
                             self.add_values();
                         }
                     }
+
                 });
 
 
                 egui::ComboBox::from_label("Select Y Axis:")
-                .selected_text(format!("{:?}",self.trick_data.descriptors[self.y_selected].name.clone()))
+                .selected_text(format!("{:?}", self.trick_data.descriptors[self.y_selected].name.clone()))
                 .show_ui(ui, |ui| {
                     for i in 0..self.trick_data.descriptors.len() {
-                        let value = ui.selectable_value(&mut self.y_axis, self.trick_data.descriptors[self.y_selected].name.clone(), self.trick_data.descriptors[i].name.clone());
+                        let value = ui.selectable_value(&mut self.trick_data.descriptors[i].name.clone(), self.trick_data.descriptors[self.y_selected].name.clone(), self.trick_data.descriptors[i].name.clone());
                         if (value.clicked()) {
                             self.y_selected = i;
+                            self.y_axis = self.trick_data.descriptors[i].name.clone();
                             self.add_values();
                         }
                     }
                 });
+
+            
         }
         egui::warn_if_debug_build(ui);
 
-        let mut plot = egui::plot::Plot::new("A test plot!");
+        let mut plot = egui::plot::Plot::new("A test plot!")
+            .legend(Legend::default());
         
         plot.show(ui, |plot_ui| {
             plot_ui.line(egui::plot::Line::new(
                 egui::plot::PlotPoints::Owned(Vec::from_iter(self.values.iter().copied())),
             ));
+
         })
 
     });
