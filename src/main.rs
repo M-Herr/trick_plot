@@ -218,8 +218,7 @@ impl eframe::App for MyEguiApp {
         }
         egui::warn_if_debug_build(ui);
 
-        let mut plot = egui::plot::Plot::new("A test plot!")
-            .legend(Legend::default());
+        let mut plot = egui::plot::Plot::new("A test plot!");
         
         plot.show(ui, |plot_ui| {
             plot_ui.line(egui::plot::Line::new(
